@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>都道府県神経衰弱ゲーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        
+        .card {
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            flex-direction: column;
+            gap: 5px;
+            padding: 10px;
+        }
+        
+        .card-front {
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .card-back {
+            background: white;
+            color: #333;
+            transform: rotateY(180deg);
+            font-size: 16px;
+        }
+        
+        .card-back.kanji-card {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+        
+        .card-back.hiragana-card {
+            background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
+            color: #2d3436;
+        }
+        
+        .mode-btn {
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .mode-btn.selected {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+        
+        .region-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .region-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .region-btn.selected {
+            background: linear-gradient(45deg, #fd79a8, #fdcb6e) !important;
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .matched {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .celebration {
+            animation: bounce 0.6s ease-in-out;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0,-30px,0); }
+            70% { transform: translate3d(0,-15px,0); }
+            90% { transform: translate3d(0,-4px,0); }
+        }
+
+        .selected-region-tag {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            margin: 0.25rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .selected-region-tag:hover {
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+        }
+
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        ruby {
+            ruby-align: center;
+        }
+        
+        rt {
+            font-size: 0.6em;
+            line-height: 1;
+            color: inherit;
+        }
+        
+        .ruby-hidden rt {
+            display: none;
+        }
+
+        .ruby-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .ruby-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+        }
+
+        .ruby-toggle.ruby-off {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+        }
+    </style>
+</head>
+<body class="p-4">
+    <!-- ルビ切り替えボタン -->
+    <button id="rubyToggle" class="ruby-toggle" onclick="toggleRuby()">
+        <i class="fas fa-font"></i> <ruby>ルビ<rt>るび</rt></ruby><ruby>表<rt>ひょう</rt>示<rt>じ</rt></ruby>
+    </button>
+
+    <!-- タイトル -->
+    <div class="text-center mb-8">
+        <h1 class="text-5xl font-bold text-white mb-4 animate__animated animate__bounceInDown">
+            🗾 <ruby>都<rt>と</rt>道<rt>どう</rt>府<rt>ふ</rt>県<rt>けん</rt>神<rt>しん</rt>経<rt>けい</rt>衰<rt>すい</rt>弱<rt>じゃく</rt></ruby>ゲーム 🗾
+        </h1>
+        <p class="text-xl text-white animate__animated animate__fadeInUp">
+            <ruby>日<rt>に</rt>本<rt>ほん</rt></ruby>の<ruby>地<rt>ち</rt>理<rt>り</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しく<ruby>覚<rt>おぼ</rt></ruby>えよう！
+        </p>
+    </div>
+
+    <!-- ゲームモード選択画面 -->
+    <div id="modeScreen" class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-3xl p-8 shadow-2xl animate__animated animate__zoomIn">
+            <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">
+                🎯 <ruby>ゲーム<rt>げーむ</rt>モード<rt>もーど</rt></ruby>を<ruby>選<rt>えら</rt></ruby>ぼう
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <button class="mode-btn bg-blue-400 hover:bg-blue-500 text-white p-6 rounded-2xl text-lg font-bold" data-mode="prefecture">
+                    🏞️ <ruby>都<rt>と</rt>道<rt>どう</rt>府<rt>ふ</rt>県<rt>けん</rt>名<rt>めい</rt></ruby><br>
+                    <small class="text-sm opacity-80">(<ruby>漢<rt>かん</rt>字<rt>じ</rt></ruby> ⇔ ひらがな)</small>
+                </button>
+                <button class="mode-btn bg-green-400 hover:bg-green-500 text-white p-6 rounded-2xl text-lg font-bold" data-mode="capital">
+                    🏛️ <ruby>県<rt>けん</rt>庁<rt>ちょう</rt>所<rt>しょ</rt>在<rt>ざい</rt>地<rt>ち</rt></ruby><br>
+                    <small class="text-sm opacity-80">(<ruby>漢<rt>かん</rt>字<rt>じ</rt></ruby> ⇔ ひらがな)</small>
+                </button>
+                <button class="mode-btn bg-purple-400 hover:bg-purple-500 text-white p-6 rounded-2xl text-lg font-bold" data-mode="mixed">
+                    🔗 <ruby>県<rt>けん</rt>名<rt>めい</rt></ruby>⇔<ruby>県<rt>けん</rt>庁<rt>ちょう</rt>所<rt>しょ</rt>在<rt>ざい</rt>地<rt>ち</rt></ruby><br>
+                    <small class="text-sm opacity-80">(<ruby>関<rt>かん</rt>連<rt>れん</rt></ruby>づけ)</small>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <button id="nextToRegionBtn" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xl font-bold py-3 px-6 rounded-full shadow-lg transform transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    📍 <ruby>地<rt>ち</rt>方<rt>ほう</rt></ruby><ruby>選<rt>せん</rt>択<rt>たく</rt></ruby>へ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 地方選択画面 -->
+    <div id="regionScreen" class="max-w-4xl mx-auto hidden">
+        <div class="bg-white rounded-3xl p-8 shadow-2xl animate__animated animate__zoomIn">
+            <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">
+                📚 <ruby>地<rt>ち</rt>方<rt>ほう</rt></ruby>を<ruby>選<rt>えら</rt></ruby>ぼう（<ruby>最<rt>さい</rt>大<rt>だい</rt></ruby>3つまで）
+            </h2>
+            
+            <!-- 選択済み地方表示エリア -->
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-gray-700 mb-3 text-center"><ruby>選<rt>せん</rt>択<rt>たく</rt>済<rt>ず</rt></ruby>み<ruby>地<rt>ち</rt>方<rt>ほう</rt></ruby>:</h3>
+                <div id="selectedRegionsDisplay" class="min-h-[3rem] bg-gray-100 rounded-2xl p-3 flex flex-wrap items-center justify-center border-2 border-dashed border-gray-300">
+                    <span class="text-gray-500"><ruby>地<rt>ち</rt>方<rt>ほう</rt></ruby>を<ruby>選<rt>せん</rt>択<rt>たく</rt></ruby>してください</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                <button class="region-btn bg-blue-400 hover:bg-blue-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="hokkaido-tohoku">
+                    🏔️ <ruby>北<rt>ほっ</rt>海<rt>かい</rt>道<rt>どう</rt></ruby>・<ruby>東<rt>とう</rt>北<rt>ほく</rt></ruby>
+                </button>
+                <button class="region-btn bg-green-400 hover:bg-green-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="kanto">
+                    🏙️ <ruby>関<rt>かん</rt>東<rt>とう</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>
+                </button>
+                <button class="region-btn bg-yellow-400 hover:bg-yellow-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="chubu">
+                    🗻 <ruby>中<rt>ちゅう</rt>部<rt>ぶ</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>
+                </button>
+                <button class="region-btn bg-purple-400 hover:bg-purple-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="kinki">
+                    🏯 <ruby>近<rt>きん</rt>畿<rt>き</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>
+                </button>
+                <button class="region-btn bg-red-400 hover:bg-red-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="chugoku">
+                    ⛩️ <ruby>中<rt>ちゅう</rt>国<rt>ごく</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>
+                </button>
+                <button class="region-btn bg-cyan-400 hover:bg-cyan-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="shikoku">
+                    🌊 <ruby>四<rt>し</rt>国<rt>こく</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>
+                </button>
+                <button class="region-btn bg-orange-400 hover:bg-orange-500 text-white p-4 rounded-2xl text-lg font-bold" data-region="kyushu-okinawa">
+                    🌺 <ruby>九<rt>きゅう</rt>州<rt>しゅう</rt></ruby>・<ruby>沖<rt>おき</rt>縄<rt>なわ</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <p id="selectedRegionCount" class="text-lg mb-4 text-gray-600"><ruby>選<rt>せん</rt>択<rt>たく</rt>済<rt>ず</rt></ruby>み: 0/3</p>
+                <div class="flex gap-4 justify-center">
+                    <button id="backToModeBtn" class="bg-gray-500 hover:bg-gray-600 text-white text-lg font-bold py-3 px-6 rounded-full">
+                        ← <ruby>戻<rt>もど</rt></ruby>る
+                    </button>
+                    <button id="startGameBtn" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xl font-bold py-3 px-6 rounded-full shadow-lg transform transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        🎯 ゲームスタート！
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="max-w-6xl mx-auto hidden">
+        <div class="bg-white rounded-3xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                <h2 class="text-3xl font-bold text-gray-800">🎲 <ruby>神<rt>しん</rt>経<rt>けい</rt>衰<rt>すい</rt>弱<rt>じゃく</rt></ruby>ゲーム</h2>
+                <div class="flex gap-4 items-center flex-wrap">
+                    <!-- タイマー表示 -->
+                    <div class="timer-display text-center">
+                        <div class="text-sm text-gray-600">⏱️ <ruby>経<rt>けい</rt>過<rt>か</rt>時<rt>じ</rt>間<rt>かん</rt></ruby></div>
+                        <div id="gameTimer" class="text-lg font-bold text-purple-600">00:00</div>
+                    </div>
+                    <div class="text-lg font-bold text-gray-600">
+                        マッチ: <span id="matchCount" class="text-green-600">0</span>/<span id="totalPairs">0</span>
+                    </div>
+                    <button id="backToRegionBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+                        ← <ruby>戻<rt>もど</rt></ruby>る
+                    </button>
+                </div>
+            </div>
+            
+            <!-- カード配置エリア -->
+            <div id="gameBoard" class="grid gap-3 mb-6"></div>
+            
+            <!-- マッチした説明表示エリア -->
+            <div id="matchDisplay" class="text-center p-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl hidden">
+                <div class="text-white text-xl font-bold" id="matchedInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- クリア画面 -->
+    <div id="clearScreen" class="max-w-2xl mx-auto hidden">
+        <div class="bg-white rounded-3xl p-8 shadow-2xl text-center animate__animated animate__zoomIn">
+            <h2 class="text-5xl font-bold text-yellow-500 mb-4">🎉 おめでとう！ 🎉</h2>
+            <p class="text-2xl text-gray-700 mb-4"><ruby>全<rt>すべ</rt></ruby>てのペアを<ruby>見<rt>み</rt></ruby>つけました！</p>
+            <!-- クリアタイム表示 -->
+            <div class="timer-display text-2xl mb-6 inline-block">
+                🏆 <ruby>クリア<rt>くりあ</rt>タイム<rt>たいむ</rt></ruby>: <span id="finalTime" class="text-purple-600 font-bold">00:00</span>
+            </div>
+            <div>
+                <button id="playAgainBtn" class="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white text-xl font-bold py-4 px-8 rounded-full shadow-lg transform transition hover:scale-105">
+                    🔄 もう<ruby>一<rt>いち</rt>度<rt>ど</rt></ruby><ruby>遊<rt>あそ</rt></ruby>ぶ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ゲームデータ
+        const prefectureData = {
+            hokkaido: {
+                name: '北海道', kana: 'ほっかいどう', region: 'hokkaido-tohoku',
+                capital: '札幌市', capitalKana: 'さっぽろし',
+                specialties: 'カニ・ホタテ・じゃがいも',
+                capitalFeatures: '<ruby>雪<rt>ゆき</rt></ruby>まつり・ラーメン・<ruby>時<rt>とけ</rt>計<rt>い</rt>台<rt>だい</rt></ruby>'
+            },
+            aomori: {
+                name: '青森県', kana: 'あおもりけん', region: 'hokkaido-tohoku',
+                capital: '青森市', capitalKana: 'あおもりし',
+                specialties: 'りんご・ねぶた・<ruby>大<rt>おお</rt>間<rt>ま</rt></ruby>のまぐろ',
+                capitalFeatures: 'ねぶた・りんご・<ruby>海<rt>うみ</rt></ruby>の<ruby>幸<rt>さち</rt></ruby>'
+            },
+            iwate: {
+                name: '岩手県', kana: 'いわてけん', region: 'hokkaido-tohoku',
+                capital: '盛岡市', capitalKana: 'もりおかし',
+                specialties: 'わんこそば・<ruby>南<rt>なん</rt>部<rt>ぶ</rt>鉄<rt>てっ</rt>器<rt>き</rt></ruby>・<ruby>前<rt>まえ</rt>沢<rt>さわ</rt>牛<rt>ぎゅう</rt></ruby>',
+                capitalFeatures: 'わんこそば・<ruby>石<rt>いし</rt>割<rt>わり</rt>桜<rt>ざくら</rt></ruby>'
+            },
+            miyagi: {
+                name: '宮城県', kana: 'みやぎけん', region: 'hokkaido-tohoku',
+                capital: '仙台市', capitalKana: 'せんだいし',
+                specialties: '<ruby>牛<rt>ぎゅう</rt>タン<rt>たん</rt></ruby>・<ruby>笹<rt>ささ</rt></ruby>かまぼこ・ずんだ<ruby>餅<rt>もち</rt></ruby>',
+                capitalFeatures: '<ruby>七<rt>たな</rt>夕<rt>ばた</rt></ruby>・<ruby>牛<rt>ぎゅう</rt>タン<rt>たん</rt></ruby>・<ruby>杜<rt>もり</rt></ruby>の<ruby>都<rt>みやこ</rt></ruby>'
+            },
+            akita: {
+                name: '秋田県', kana: 'あきたけん', region: 'hokkaido-tohoku',
+                capital: '秋田市', capitalKana: 'あきたし',
+                specialties: 'きりたんぽ・なまはげ・<ruby>比<rt>ひ</rt>内<rt>ない</rt>地<rt>じ</rt>鶏<rt>どり</rt></ruby>',
+                capitalFeatures: 'なまはげ・<ruby>竿<rt>かん</rt>燈<rt>とう</rt></ruby>まつり'
+            },
+            yamagata: {
+                name: '山形県', kana: 'やまがたけん', region: 'hokkaido-tohoku',
+                capital: '山形市', capitalKana: 'やまがたし',
+                specialties: 'さくらんぼ・ラ・フランス・<ruby>米<rt>よね</rt>沢<rt>ざわ</rt>牛<rt>ぎゅう</rt></ruby>',
+                capitalFeatures: '<ruby>紅<rt>べに</rt>花<rt>ばな</rt></ruby>・<ruby>芋<rt>いも</rt>煮<rt>に</rt></ruby>・<ruby>蔵<rt>ざ</rt>王<rt>おう</rt></ruby>'
+            },
+            fukushima: {
+                name: '福島県', kana: 'ふくしまけん', region: 'hokkaido-tohoku',
+                capital: '福島市', capitalKana: 'ふくしまし',
+                specialties: '<ruby>桃<rt>もも</rt></ruby>・<ruby>赤<rt>あか</rt></ruby>べこ・<ruby>喜<rt>き</rt>多<rt>た</rt>方<rt>かた</rt></ruby>ラーメン',
+                capitalFeatures: '<ruby>桃<rt>もも</rt></ruby>・<ruby>温<rt>おん</rt>泉<rt>せん</rt></ruby>・<ruby>信<rt>しの</rt>夫<rt>ぶ</rt>山<rt>やま</rt></ruby>'
+            },
+            
+            // 関東地方
+            ibaraki: {
+                name: '茨城県', kana: 'いばらきけん', region: 'kanto',
+                capital: '水戸市', capitalKana: 'みとし',
+                specialties: '<ruby>納<rt>なっ</rt>豆<rt>とう</rt></ruby>・メロン・ほしいも',
+                capitalFeatures: '<ruby>納<rt>なっ</rt>豆<rt>とう</rt></ruby>・<ruby>偕<rt>かい</rt>楽<rt>らく</rt>園<rt>えん</rt></ruby>・<ruby>梅<rt>うめ</rt></ruby>まつり'
+            },
+            tochigi: {
+                name: '栃木県', kana: 'とちぎけん', region: 'kanto',
+                capital: '宇都宮市', capitalKana: 'うつのみやし',
+                specialties: '<ruby>餃<rt>ぎょう</rt>子<rt>ざ</rt></ruby>・いちご・かんぴょう',
+                capitalFeatures: '<ruby>餃<rt>ぎょう</rt>子<rt>ざ</rt></ruby>・<ruby>大<rt>おお</rt>谷<rt>や</rt>石<rt>いし</rt></ruby>'
+            },
+            gunma: {
+                name: '群馬県', kana: 'ぐんまけん', region: 'kanto',
+                capital: '前橋市', capitalKana: 'まえばしし',
+                specialties: 'こんにゃく・だるま・<ruby>温<rt>おん</rt>泉<rt>せん</rt></ruby>まんじゅう',
+                capitalFeatures: '<ruby>赤<rt>あか</rt>城<rt>ぎ</rt>山<rt>やま</rt></ruby>・<ruby>豚<rt>ぶた</rt>肉<rt>にく</rt></ruby>・<ruby>焼<rt>や</rt></ruby>きまんじゅう'
+            },
+            saitama: {
+                name: '埼玉県', kana: 'さいたまけん', region: 'kanto',
+                capital: 'さいたま市', capitalKana: 'さいたまし',
+                specialties: '<ruby>草<rt>そう</rt>加<rt>か</rt></ruby>せんべい・ねぎ・<ruby>狭<rt>さ</rt>山<rt>やま</rt>茶<rt>ちゃ</rt></ruby>',
+                capitalFeatures: '<ruby>盆<rt>ぼん</rt>栽<rt>さい</rt></ruby>・<ruby>鉄<rt>てつ</rt>道<rt>どう</rt>博<rt>はく</rt>物<rt>ぶつ</rt>館<rt>かん</rt></ruby>'
+            },
+            chiba: {
+                name: '千葉県', kana: 'ちばけん', region: 'kanto',
+                capital: '千葉市', capitalKana: 'ちばし',
+                specialties: '<ruby>落<rt>らっ</rt>花<rt>か</rt>生<rt>せい</rt></ruby>・びわ・<ruby>菜<rt>な</rt></ruby>の<ruby>花<rt>はな</rt></ruby>',
+                capitalFeatures: '<ruby>落<rt>らっ</rt>花<rt>か</rt>生<rt>せい</rt></ruby>・モノレール'
+            },
+            tokyo: {
+                name: '東京都', kana: 'とうきょうと', region: 'kanto',
+                capital: '新宿区', capitalKana: 'しんじゅくく',
+                specialties: '<ruby>東<rt>とう</rt>京<rt>きょう</rt>タワー<rt>たわー</rt></ruby>・<ruby>雷<rt>かみなり</rt></ruby>おこし・もんじゃ',
+                capitalFeatures: '<ruby>都<rt>と</rt>庁<rt>ちょう</rt></ruby>・<ruby>高<rt>こう</rt>層<rt>そう</rt>ビル<rt>びる</rt></ruby>・<ruby>大<rt>だい</rt>都<rt>と</rt>会<rt>かい</rt></ruby>'
+            },
+            kanagawa: {
+                name: '神奈川県', kana: 'かながわけん', region: 'kanto',
+                capital: '横浜市', capitalKana: 'よこはまし',
+                specialties: 'シューマイ・<ruby>中<rt>ちゅう</rt>華<rt>か</rt></ruby>まん・<ruby>鎌<rt>かま</rt>倉<rt>くら</rt>大<rt>だい</rt>仏<rt>ぶつ</rt></ruby>',
+                capitalFeatures: '<ruby>中<rt>ちゅう</rt>華<rt>か</rt>街<rt>がい</rt></ruby>・<ruby>港<rt>みなと</rt></ruby>・みなとみらい'
+            },
+            
+            // 中部地方
+            niigata: {
+                name: '新潟県', kana: 'にいがたけん', region: 'chubu',
+                capital: '新潟市', capitalKana: 'にいがたし',
+                specialties: 'コシヒカリ・<ruby>日<rt>に</rt>本<rt>ほん</rt>酒<rt>しゅ</rt></ruby>・へぎそば',
+                capitalFeatures: '<ruby>米<rt>こめ</rt></ruby>・<ruby>日<rt>に</rt>本<rt>ほん</rt>酒<rt>しゅ</rt></ruby>・<ruby>信<rt>しな</rt>濃<rt>の</rt>川<rt>がわ</rt></ruby>'
+            },
+            toyama: {
+                name: '富山県', kana: 'とやまけん', region: 'chubu',
+                capital: '富山市', capitalKana: 'とやまし',
+                specialties: 'ホタルイカ・ます<ruby>寿<rt>す</rt>司<rt>し</rt></ruby>・<ruby>薬<rt>くすり</rt></ruby>',
+                capitalFeatures: '<ruby>薬<rt>くすり</rt></ruby>・ガラス<ruby>工<rt>こう</rt>芸<rt>げい</rt></ruby>'
+            },
+            ishikawa: {
+                name: '石川県', kana: 'いしかわけん', region: 'chubu',
+                capital: '金沢市', capitalKana: 'かなざわし',
+                specialties: '<ruby>兼<rt>けん</rt>六<rt>ろく</rt>園<rt>えん</rt></ruby>・<ruby>金<rt>きん</rt>箔<rt>ぱく</rt></ruby>・<ruby>加<rt>か</rt>賀<rt>が</rt>友<rt>ゆう</rt>禅<rt>ぜん</rt></ruby>',
+                capitalFeatures: '<ruby>兼<rt>けん</rt>六<rt>ろく</rt>園<rt>えん</rt></ruby>・<ruby>茶<rt>ちゃ</rt>屋<rt>や</rt>街<rt>がい</rt></ruby>・<ruby>和<rt>わ</rt>菓<rt>が</rt>子<rt>し</rt></ruby>'
+            },
+            fukui: {
+                name: '福井県', kana: 'ふくいけん', region: 'chubu',
+                capital: '福井市', capitalKana: 'ふくいし',
+                specialties: 'カニ・<ruby>恐<rt>きょう</rt>竜<rt>りゅう</rt></ruby>・<ruby>越<rt>えち</rt>前<rt>ぜん</rt></ruby>そば',
+                capitalFeatures: '<ruby>恐<rt>きょう</rt>竜<rt>りゅう</rt></ruby>・カニ・<ruby>永<rt>えい</rt>平<rt>へい</rt>寺<rt>じ</rt></ruby>'
+            },
+            yamanashi: {
+                name: '山梨県', kana: 'やまなしけん', region: 'chubu',
+                capital: '甲府市', capitalKana: 'こうふし',
+                specialties: 'ぶどう・<ruby>桃<rt>もも</rt></ruby>・ほうとう',
+                capitalFeatures: 'ぶどう・<ruby>宝<rt>ほう</rt>石<rt>せき</rt></ruby>・<ruby>武<rt>たけ</rt>田<rt>だ</rt>信<rt>しん</rt>玄<rt>げん</rt></ruby>'
+            },
+            nagano: {
+                name: '長野県', kana: 'ながのけん', region: 'chubu',
+                capital: '長野市', capitalKana: 'ながのし',
+                specialties: 'りんご・そば・<ruby>野<rt>の</rt>沢<rt>ざわ</rt>菜<rt>な</rt></ruby>',
+                capitalFeatures: '<ruby>善<rt>ぜん</rt>光<rt>こう</rt>寺<rt>じ</rt></ruby>・そば・りんご'
+            },
+            gifu: {
+                name: '岐阜県', kana: 'ぎふけん', region: 'chubu',
+                capital: '岐阜市', capitalKana: 'ぎふし',
+                specialties: '<ruby>飛<rt>ひ</rt>騨<rt>だ</rt>牛<rt>ぎゅう</rt></ruby>・<ruby>柿<rt>かき</rt></ruby>・<ruby>鮎<rt>あゆ</rt></ruby>',
+                capitalFeatures: '<ruby>織<rt>お</rt>田<rt>だ</rt>信<rt>のぶ</rt>長<rt>なが</rt></ruby>・<ruby>長<rt>なが</rt>良<rt>ら</rt>川<rt>がわ</rt></ruby>・<ruby>鵜<rt>う</rt>飼<rt>か</rt></ruby>い'
+            },
+            shizuoka: {
+                name: '静岡県', kana: 'しずおかけん', region: 'chubu',
+                capital: '静岡市', capitalKana: 'しずおかし',
+                specialties: 'お<ruby>茶<rt>ちゃ</rt></ruby>・うなぎ・みかん',
+                capitalFeatures: 'お<ruby>茶<rt>ちゃ</rt></ruby>・プラモデル'
+            },
+            aichi: {
+                name: '愛知県', kana: 'あいちけん', region: 'chubu',
+                capital: '名古屋市', capitalKana: 'なごやし',
+                specialties: '<ruby>自<rt>じ</rt>動<rt>どう</rt>車<rt>しゃ</rt></ruby>・えびせん・<ruby>味<rt>み</rt>噌<rt>そ</rt></ruby>カツ',
+                capitalFeatures: '<ruby>金<rt>きん</rt></ruby>のしゃちほこ・<ruby>味<rt>み</rt>噌<rt>そ</rt></ruby>カツ'
+            },
+            
+            // 近畿地方
+            mie: {
+                name: '三重県', kana: 'みえけん', region: 'kinki',
+                capital: '津市', capitalKana: 'つし',
+                specialties: '<ruby>伊<rt>い</rt>勢<rt>せ</rt></ruby>エビ・<ruby>松<rt>まつ</rt>阪<rt>さか</rt>牛<rt>ぎゅう</rt></ruby>・<ruby>真<rt>しん</rt>珠<rt>じゅ</rt></ruby>',
+                capitalFeatures: '<ruby>鰻<rt>うなぎ</rt></ruby>・お<ruby>伊<rt>い</rt>勢<rt>せ</rt></ruby>さん'
+            },
+            shiga: {
+                name: '滋賀県', kana: 'しがけん', region: 'kinki',
+                capital: '大津市', capitalKana: 'おおつし',
+                specialties: '<ruby>琵<rt>び</rt>琶<rt>わ</rt>湖<rt>こ</rt></ruby>・<ruby>近<rt>おう</rt>江<rt>み</rt>牛<rt>ぎゅう</rt></ruby>・ふなずし',
+                capitalFeatures: '<ruby>琵<rt>び</rt>琶<rt>わ</rt>湖<rt>こ</rt></ruby>・<ruby>比<rt>ひ</rt>叡<rt>えい</rt>山<rt>ざん</rt></ruby>・<ruby>近<rt>おう</rt>江<rt>み</rt>米<rt>まい</rt></ruby>'
+            },
+            kyoto: {
+                name: '京都府', kana: 'きょうとふ', region: 'kinki',
+                capital: '京都市', capitalKana: 'きょうとし',
+                specialties: '<ruby>抹<rt>まっ</rt>茶<rt>ちゃ</rt></ruby>・<ruby>八<rt>やつ</rt></ruby>ツ<ruby>橋<rt>はし</rt></ruby>・<ruby>京<rt>きょう</rt>野<rt>や</rt>菜<rt>さい</rt></ruby>',
+                capitalFeatures: '<ruby>寺<rt>じ</rt>社<rt>しゃ</rt>仏<rt>ぶっ</rt>閣<rt>かく</rt></ruby>・<ruby>舞<rt>まい</rt>妓<rt>こ</rt></ruby>さん・お<ruby>抹<rt>まっ</rt>茶<rt>ちゃ</rt></ruby>'
+            },
+            osaka: {
+                name: '大阪府', kana: 'おおさかふ', region: 'kinki',
+                capital: '大阪市', capitalKana: 'おおさかし',
+                specialties: 'たこ<ruby>焼<rt>や</rt></ruby>き・お<ruby>好<rt>この</rt></ruby>み<ruby>焼<rt>や</rt></ruby>き・<ruby>串<rt>くし</rt></ruby>カツ',
+                capitalFeatures: 'たこ<ruby>焼<rt>や</rt></ruby>き・お<ruby>笑<rt>わら</rt></ruby>い・<ruby>道<rt>どう</rt>頓<rt>とん</rt>堀<rt>ぼり</rt></ruby>'
+            },
+            hyogo: {
+                name: '兵庫県', kana: 'ひょうごけん', region: 'kinki',
+                capital: '神戸市', capitalKana: 'こうべし',
+                specialties: '<ruby>神<rt>こう</rt>戸<rt>べ</rt>牛<rt>ぎゅう</rt></ruby>・<ruby>明<rt>あか</rt>石<rt>し</rt></ruby><ruby>焼<rt>や</rt></ruby>き・<ruby>玉<rt>たま</rt></ruby>ねぎ',
+                capitalFeatures: 'ポートタワー・<ruby>異<rt>い</rt>人<rt>じん</rt>館<rt>かん</rt></ruby>・パン'
+            },
+            nara: {
+                name: '奈良県', kana: 'ならけん', region: 'kinki',
+                capital: '奈良市', capitalKana: 'ならし',
+                specialties: '<ruby>柿<rt>かき</rt></ruby>の<ruby>葉<rt>は</rt>寿<rt>ず</rt>司<rt>し</rt></ruby>・<ruby>奈<rt>な</rt>良<rt>ら</rt></ruby><ruby>漬<rt>づ</rt></ruby>け・<ruby>吉<rt>よし</rt>野<rt>の</rt>杉<rt>すぎ</rt></ruby>',
+                capitalFeatures: '<ruby>大<rt>だい</rt>仏<rt>ぶつ</rt></ruby>・<ruby>鹿<rt>しか</rt></ruby>・<ruby>東<rt>とう</rt>大<rt>だい</rt>寺<rt>じ</rt></ruby>'
+            },
+            wakayama: {
+                name: '和歌山県', kana: 'わかやまけん', region: 'kinki',
+                capital: '和歌山市', capitalKana: 'わかやまし',
+                specialties: 'みかん・<ruby>梅<rt>うめ</rt>干<rt>ぼ</rt></ruby>し・パンダ',
+                capitalFeatures: '<ruby>和<rt>わ</rt>歌<rt>か</rt>山<rt>やま</rt>城<rt>じょう</rt></ruby>・みかん'
+            },
+            
+            // 中国地方
+            tottori: {
+                name: '鳥取県', kana: 'とっとりけん', region: 'chugoku',
+                capital: '鳥取市', capitalKana: 'とっとりし',
+                specialties: '<ruby>砂<rt>さ</rt>丘<rt>きゅう</rt></ruby>・<ruby>梨<rt>なし</rt></ruby>・カニ',
+                capitalFeatures: '<ruby>砂<rt>さ</rt>丘<rt>きゅう</rt></ruby>・<ruby>二<rt>に</rt>十<rt>じゅう</rt>世<rt>せい</rt>紀<rt>き</rt>梨<rt>なし</rt></ruby>'
+            },
+            shimane: {
+                name: '島根県', kana: 'しまねけん', region: 'chugoku',
+                capital: '松江市', capitalKana: 'まつえし',
+                specialties: 'しじみ・<ruby>出<rt>いず</rt>雲<rt>も</rt></ruby>そば・<ruby>石<rt>いわ</rt>見<rt>み</rt>銀<rt>ぎん</rt>山<rt>ざん</rt></ruby>',
+                capitalFeatures: '<ruby>宍<rt>しん</rt>道<rt>じ</rt>湖<rt>こ</rt></ruby>・<ruby>堀<rt>ほり</rt>川<rt>かわ</rt>遊<rt>ゆう</rt>覧<rt>らん</rt></ruby>'
+            },
+            okayama: {
+                name: '岡山県', kana: 'おかやまけん', region: 'chugoku',
+                capital: '岡山市', capitalKana: 'おかやまし',
+                specialties: '<ruby>桃<rt>もも</rt></ruby>・マスカット・きびだんご',
+                capitalFeatures: '<ruby>桃<rt>もも</rt>太<rt>た</rt>郎<rt>ろう</rt></ruby>・<ruby>後<rt>こう</rt>楽<rt>らく</rt>園<rt>えん</rt></ruby>'
+            },
+            hiroshima: {
+                name: '広島県', kana: 'ひろしまけん', region: 'chugoku',
+                capital: '広島市', capitalKana: 'ひろしまし',
+                specialties: 'お<ruby>好<rt>この</rt></ruby>み<ruby>焼<rt>や</rt></ruby>き・もみじ<ruby>饅<rt>まん</rt>頭<rt>じゅう</rt></ruby>・カキ',
+                capitalFeatures: '<ruby>平<rt>へい</rt>和<rt>わ</rt></ruby>・お<ruby>好<rt>この</rt></ruby>み<ruby>焼<rt>や</rt></ruby>き・カキ'
+            },
+            yamaguchi: {
+                name: '山口県', kana: 'やまぐちけん', region: 'chugoku',
+                capital: '山口市', capitalKana: 'やまぐちし',
+                specialties: 'ふぐ・<ruby>夏<rt>なつ</rt></ruby>みかん・かまぼこ',
+                capitalFeatures: '<ruby>瑠<rt>る</rt>璃<rt>り</rt>光<rt>こう</rt>寺<rt>じ</rt></ruby>・SLやまぐち'
+            },
+            
+            // 四国地方
+            tokushima: {
+                name: '徳島県', kana: 'とくしまけん', region: 'shikoku',
+                capital: '徳島市', capitalKana: 'とくしまし',
+                specialties: 'すだち・<ruby>阿<rt>あ</rt>波<rt>わ</rt></ruby><ruby>踊<rt>おど</rt></ruby>り・<ruby>鳴<rt>なる</rt>門<rt>と</rt>金<rt>きん</rt>時<rt>とき</rt></ruby>',
+                capitalFeatures: '<ruby>阿<rt>あ</rt>波<rt>わ</rt></ruby><ruby>踊<rt>おど</rt></ruby>り・<ruby>鳴<rt>なる</rt>門<rt>と</rt></ruby>の<ruby>渦<rt>うず</rt>潮<rt>しお</rt></ruby>'
+            },
+            kagawa: {
+                name: '香川県', kana: 'かがわけん', region: 'shikoku',
+                capital: '高松市', capitalKana: 'たかまつし',
+                specialties: 'うどん・<ruby>骨<rt>ほね</rt>付<rt>つき</rt>鳥<rt>どり</rt></ruby>・<ruby>和<rt>わ</rt>三<rt>さん</rt>盆<rt>ぼん</rt></ruby>',
+                capitalFeatures: 'うどん・<ruby>栗<rt>りつ</rt>林<rt>りん</rt>公<rt>こう</rt>園<rt>えん</rt></ruby>'
+            },
+            ehime: {
+                name: '愛媛県', kana: 'えひめけん', region: 'shikoku',
+                capital: '松山市', capitalKana: 'まつやまし',
+                specialties: 'みかん・<ruby>鯛<rt>たい</rt></ruby>めし・<ruby>今<rt>いま</rt>治<rt>ばり</rt></ruby>タオル',
+                capitalFeatures: '<ruby>道<rt>どう</rt>後<rt>ご</rt>温<rt>おん</rt>泉<rt>せん</rt></ruby>・<ruby>坊<rt>ぼう</rt></ruby>っちゃん'
+            },
+            kochi: {
+                name: '高知県', kana: 'こうちけん', region: 'shikoku',
+                capital: '高知市', capitalKana: 'こうちし',
+                specialties: 'カツオ・<ruby>文<rt>ぶん</rt>旦<rt>たん</rt></ruby>・ゆず',
+                capitalFeatures: 'カツオ・よさこい・<ruby>坂<rt>さか</rt>本<rt>もと</rt>龍<rt>りょう</rt>馬<rt>ま</rt></ruby>'
+            },
+            
+            // 九州・沖縄地方
+            fukuoka: {
+                name: '福岡県', kana: 'ふくおかけん', region: 'kyushu-okinawa',
+                capital: '福岡市', capitalKana: 'ふくおかし',
+                specialties: '<ruby>明<rt>めん</rt>太<rt>たい</rt>子<rt>こ</rt></ruby>・ラーメン・あまおう',
+                capitalFeatures: '<ruby>博<rt>はか</rt>多<rt>た</rt></ruby>ラーメン・<ruby>屋<rt>や</rt>台<rt>たい</rt></ruby>・<ruby>祭<rt>まつ</rt></ruby>り'
+            },
+            saga: {
+                name: '佐賀県', kana: 'さがけん', region: 'kyushu-okinawa',
+                capital: '佐賀市', capitalKana: 'さがし',
+                specialties: '<ruby>有<rt>あり</rt>田<rt>た</rt></ruby><ruby>焼<rt>や</rt></ruby>き・<ruby>佐<rt>さ</rt>賀<rt>が</rt>牛<rt>ぎゅう</rt></ruby>・<ruby>呼<rt>よ</rt>子<rt>ぶ</rt></ruby>のイカ',
+                capitalFeatures: 'バルーン・<ruby>有<rt>あり</rt>明<rt>あけ</rt>海<rt>かい</rt></ruby>'
+            },
+            nagasaki: {
+                name: '長崎県', kana: 'ながさきけん', region: 'kyushu-okinawa',
+                capital: '長崎市', capitalKana: 'ながさきし',
+                specialties: 'カステラ・ちゃんぽん・<ruby>皿<rt>さら</rt></ruby>うどん',
+                capitalFeatures: 'グラバー<ruby>園<rt>えん</rt></ruby>・ちゃんぽん'
+            },
+            kumamoto: {
+                name: '熊本県', kana: 'くまもとけん', region: 'kyushu-okinawa',
+                capital: '熊本市', capitalKana: 'くまもとし',
+                specialties: '<ruby>馬<rt>ば</rt>刺<rt>さ</rt></ruby>し・からし<ruby>蓮<rt>れん</rt>根<rt>こん</rt></ruby>・スイカ',
+                capitalFeatures: '<ruby>熊<rt>くま</rt>本<rt>もと</rt>城<rt>じょう</rt></ruby>・<ruby>馬<rt>ば</rt>刺<rt>さ</rt></ruby>し・<ruby>水<rt>みず</rt></ruby>'
+            },
+            oita: {
+                name: '大分県', kana: 'おおいたけん', region: 'kyushu-okinawa',
+                capital: '大分市', capitalKana: 'おおいたし',
+                specialties: '<ruby>温<rt>おん</rt>泉<rt>せん</rt></ruby>・とり<ruby>天<rt>てん</rt></ruby>・かぼす',
+                capitalFeatures: '<ruby>温<rt>おん</rt>泉<rt>せん</rt></ruby>・<ruby>関<rt>せき</rt></ruby>サバ・<ruby>関<rt>せき</rt></ruby>アジ'
+            },
+            miyazaki: {
+                name: '宮崎県', kana: 'みやざきけん', region: 'kyushu-okinawa',
+                capital: '宮崎市', capitalKana: 'みやざきし',
+                specialties: 'マンゴー・<ruby>地<rt>じ</rt>鶏<rt>どり</rt></ruby>・<ruby>日<rt>ひゅう</rt>向<rt>が</rt>夏<rt>なつ</rt></ruby>',
+                capitalFeatures: '<ruby>南<rt>なん</rt>国<rt>ごく</rt></ruby>・チキン<ruby>南<rt>なん</rt>蛮<rt>ばん</rt></ruby>・<ruby>太<rt>たい</rt>陽<rt>よう</rt></ruby>'
+            },
+            kagoshima: {
+                name: '鹿児島県', kana: 'かごしまけん', region: 'kyushu-okinawa',
+                capital: '鹿児島市', capitalKana: 'かごしまし',
+                specialties: '<ruby>黒<rt>くろ</rt>豚<rt>ぶた</rt></ruby>・さつまいも・<ruby>焼<rt>しょう</rt>酎<rt>ちゅう</rt></ruby>',
+                capitalFeatures: '<ruby>桜<rt>さくら</rt>島<rt>じま</rt></ruby>・<ruby>黒<rt>くろ</rt>豚<rt>ぶた</rt></ruby>・<ruby>焼<rt>しょう</rt>酎<rt>ちゅう</rt></ruby>'
+            },
+            okinawa: {
+                name: '沖縄県', kana: 'おきなわけん', region: 'kyushu-okinawa',
+                capital: '那覇市', capitalKana: 'なはし',
+                specialties: 'ゴーヤ・パイナップル・<ruby>紅<rt>べに</rt></ruby>いも',
+                capitalFeatures: '<ruby>首<rt>しゅ</rt>里<rt>り</rt>城<rt>じょう</rt></ruby>・<ruby>国<rt>こく</rt>際<rt>さい</rt>通<rt>どお</rt></ruby>り'
+            }
+        };
+
+        // 地方名の日本語対応
+        const regionNames = {
+            'hokkaido-tohoku': '🏔️ <ruby>北<rt>ほっ</rt>海<rt>かい</rt>道<rt>どう</rt></ruby>・<ruby>東<rt>とう</rt>北<rt>ほく</rt></ruby>',
+            'kanto': '🏙️ <ruby>関<rt>かん</rt>東<rt>とう</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>',
+            'chubu': '🗻 <ruby>中<rt>ちゅう</rt>部<rt>ぶ</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>',
+            'kinki': '🏯 <ruby>近<rt>きん</rt>畿<rt>き</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>',
+            'chugoku': '⛩️ <ruby>中<rt>ちゅう</rt>国<rt>ごく</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>',
+            'shikoku': '🌊 <ruby>四<rt>し</rt>国<rt>こく</rt>地<rt>ち</rt>方<rt>ほう</rt></ruby>',
+            'kyushu-okinawa': '🌺 <ruby>九<rt>きゅう</rt
